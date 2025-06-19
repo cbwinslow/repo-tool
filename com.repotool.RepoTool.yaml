@@ -1,0 +1,31 @@
+app-id: com.repotool.RepoTool
+runtime: org.freedesktop.Platform
+runtime-version: '21.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node16
+  - org.freedesktop.Sdk.Extension.python3
+command: repo-tool
+finish-args:
+  - --share=network
+  - --filesystem=home
+modules:
+  - name: repo-tool
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app .
+      - npm install
+      - npm run build
+      - install -Dm755 repo-tool /app/bin/repo-tool
+    sources:
+      - type: dir
+        path: .
+    modules:
+      - name: python3-deps
+        buildsystem: simple
+        build-commands:
+          - pip3 install --prefix=/app requests gitpython pyyaml click
+        sources:
+          - type: file
+            path: requirements.txt
+

@@ -1,0 +1,38 @@
+name: repo-tool
+version: '1.0.0'
+summary: Repository management tool
+description: |
+  A tool to download and manage repositories efficiently.
+  Supports both Git and other version control systems.
+
+grade: stable
+confinement: strict
+base: core20
+
+apps:
+  repo-tool:
+    command: bin/repo-tool
+    plugs:
+      - network
+      - home
+      - removable-media
+
+parts:
+  repo-tool:
+    plugin: python
+    source: .
+    python-packages:
+      - requests
+      - gitpython
+      - pyyaml
+      - click
+    build-packages:
+      - python3-dev
+      - python3-pip
+      - nodejs
+      - npm
+    override-build: |
+      snapcraftctl build
+      npm install
+      npm run build
+

@@ -1,0 +1,121 @@
+name: CD
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-pypi:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: python -m build
+    
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: twine upload dist/*
+
+  publish-deb:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y debhelper dh-python
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Build DEB package
+      run: make deb
+    
+    - name: Upload DEB package
+      uses: actions/upload-artifact@v3
+      with:
+        name: deb-package
+        path: dist/*.deb
+
+  publish-snap:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Snap package
+      uses: snapcore/action-build@v1
+      id: snapcraft
+    
+    - name: Upload Snap package
+      uses: actions/upload-artifact@v3
+      with:
+        name: snap-package
+        path: ${{ steps.snapcraft.outputs.snap }}
+    
+    - name: Publish to Snap Store
+      uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_TOKEN }}
+      with:
+        snap: ${{ steps.snapcraft.outputs.snap }}
+        release: stable
+
+  publish-flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-21.08
+      options: --privileged
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Flatpak package
+      uses: bilelmoussaoui/flatpak-github-actions/flatpak-builder@v4
+      with:
+        bundle: repo-tool.flatpak
+        manifest-path: com.repotool.RepoTool.yaml
+        cache-key: flatpak-builder-${{ github.sha }}
+    
+    - name: Upload Flatpak package
+      uses: actions/upload-artifact@v3
+      with:
+        name: flatpak-package
+        path: repo-tool.flatpak
+
+  create-release:
+    needs: [publish-pypi, publish-deb, publish-snap, publish-flatpak]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          deb-package/*.deb
+          snap-package/*.snap
+          flatpak-package/*.flatpak
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

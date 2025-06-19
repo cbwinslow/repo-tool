@@ -1,0 +1,13 @@
+Source: repo-tool
+Section: utils
+Priority: optional
+Maintainer: cbwinslow <blaine.winslow@gmail.com>
+Build-Depends: debhelper (>= 11), dh-python, python3-all, python3-setuptools, nodejs
+
+Package: repo-tool
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}, python3-requests, python3-git, python3-yaml, nodejs
+Description: Repository management tool
+ A tool to download and manage repositories efficiently.
+ Supports both Git and other version control systems.
+

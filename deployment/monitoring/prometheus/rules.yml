@@ -1,0 +1,87 @@
+groups:
+  - name: repo_tool_alerts
+    rules:
+      # Resource Usage Alerts
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / container_memory_usage_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High memory usage (> 80%)
+          description: "Memory usage is above 80% for 5 minutes\n Current value: {{ $value }}"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High CPU usage (> 80%)
+          description: "CPU usage is above 80% for 5 minutes\n Current value: {{ $value }}"
+
+      # API Health Alerts
+      - alert: APIHighLatency
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High API latency (> 500ms)
+          description: "API latency is above 500ms for 5 minutes\n Current value: {{ $value }}s"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High API error rate (> 5%)
+          description: "Error rate is above 5% for 5 minutes\n Current value: {{ $value }}"
+
+      # Repository Operations Alerts
+      - alert: HighRepositoryFailureRate
+        expr: rate(repo_operation_failures_total[5m]) / rate(repo_operations_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High repository operation failure rate (> 10%)
+          description: "Repository operation failure rate is above 10% for 5 minutes\n Current value: {{ $value }}"
+
+      # Authentication Alerts
+      - alert: HighAuthFailureRate
+        expr: rate(auth_failures_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High authentication failure rate
+          description: "More than 10 authentication failures per 5 minutes\n Current value: {{ $value }}"
+
+      # Disk Usage Alerts
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High disk usage (> 85%)
+          description: "Disk usage is above 85% for 5 minutes\n Current value: {{ $value }}"
+
+  - name: repo_tool_recording_rules
+    rules:
+      # API Performance Recording Rules
+      - record: repo_tool:request_duration:avg_5m
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+
+      - record: repo_tool:error_rate:5m
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+
+      # Repository Operation Recording Rules
+      - record: repo_tool:operation_success_rate:5m
+        expr: rate(repo_operations_success_total[5m]) / rate(repo_operations_total[5m])
+
+      - record: repo_tool:operation_latency:avg_5m
+        expr: rate(repo_operation_duration_seconds_sum[5m]) / rate(repo_operation_duration_seconds_count[5m])
+

@@ -1,0 +1,163 @@
+name: Dependency Management
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Run weekly
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+        cache: 'pip'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'npm'
+
+    - name: Check for Python updates
+      id: pip-updates
+      run: |
+        pip list --outdated --format=json | jq -r '.[] | select(.name != "pip") | .name + " " + .latest_version' > pip-updates.txt
+        if [ -s pip-updates.txt ]; then
+          echo "updates_available=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check for npm updates
+      id: npm-updates
+      run: |
+        npm outdated --json | jq -r 'to_entries | .[] | .key + " " + .value.latest' > npm-updates.txt
+        if [ -s npm-updates.txt ]; then
+          echo "updates_available=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create dependency update PR
+      if: steps.pip-updates.outputs.updates_available == 'true' || steps.npm-updates.outputs.updates_available == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore(deps): Update dependencies"
+        title: "⬆️ Update dependencies"
+        body: |
+          Automated dependency updates.
+
+          Python updates:
+          ```
+          $(cat pip-updates.txt)
+          ```
+
+          Node.js updates:
+          ```
+          $(cat npm-updates.txt)
+          ```
+
+          This PR was created automatically by the dependency update workflow.
+        branch: "deps/update-dependencies"
+        labels: dependencies
+        assignees: cbwinslow
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Run Snyk
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        command: monitor
+
+    - name: Run npm audit
+      run: npm audit --json > npm-audit.json
+
+    - name: Run safety check
+      run: |
+        pip install safety
+        safety check --json > safety-report.json
+
+    - name: Generate security report
+      run: |
+        echo "# Security Audit Report" > SECURITY_REPORT.md
+        echo "## Dependencies" >> SECURITY_REPORT.md
+        echo "### Python" >> SECURITY_REPORT.md
+        safety check --output text >> SECURITY_REPORT.md
+        echo "### Node.js" >> SECURITY_REPORT.md
+        npm audit >> SECURITY_REPORT.md
+
+    - name: Create security issue if vulnerabilities found
+      if: failure()
+      uses: peter-evans/create-issue-from-file@v4
+      with:
+        title: "🚨 Security vulnerabilities detected"
+        content-filepath: ./SECURITY_REPORT.md
+        labels: security,high-priority
+
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Check Python licenses
+      run: |
+        pip install pip-licenses
+        pip-licenses --format=markdown > python-licenses.md
+
+    - name: Check npm licenses
+      run: |
+        npm install -g license-checker
+        license-checker --markdown > npm-licenses.md
+
+    - name: Generate license report
+      run: |
+        echo "# License Compliance Report" > LICENSE_REPORT.md
+        echo "## Python Dependencies" >> LICENSE_REPORT.md
+        cat python-licenses.md >> LICENSE_REPORT.md
+        echo "## Node.js Dependencies" >> LICENSE_REPORT.md
+        cat npm-licenses.md >> LICENSE_REPORT.md
+
+    - name: Archive license report
+      uses: actions/upload-artifact@v3
+      with:
+        name: license-report
+        path: LICENSE_REPORT.md
+
+  dependency-graph:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Generate Python dependency graph
+      run: |
+        pip install pipdeptree graphviz
+        pipdeptree --graph-output png > dependency-graph.png
+
+    - name: Generate npm dependency graph
+      run: |
+        npm install -g dependency-cruiser
+        depcruise --include-only "^src" --output-type dot src | dot -T png > npm-dependency-graph.png
+
+    - name: Upload dependency graphs
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-graphs
+        path: |
+          dependency-graph.png
+          npm-dependency-graph.png
+

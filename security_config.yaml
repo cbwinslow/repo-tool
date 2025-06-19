@@ -1,0 +1,42 @@
+security:
+  logging:
+    level: INFO
+    mask_patterns:
+      - pattern: 'token[:=]\s*[\'""]?\w+[\'""]?'
+        mask: 'token=***'
+      - pattern: 'password[:=]\s*[\'""]?\w+[\'""]?'
+        mask: 'password=***'
+      - pattern: 'key[:=]\s*[\'""]?[\w-]+[\'""]?'
+        mask: 'key=***'
+      - pattern: 'ssh-\w+\s+\S+'
+        mask: 'ssh-key-***'
+    rotation:
+      log_files: 5
+      max_size_mb: 10
+
+  ssl:
+    verify: true
+    check_hostname: true
+    min_tls_version: 1.2
+    verify_mode: CERT_REQUIRED
+
+  ssh:
+    key_size: 2048
+    key_format: RSA
+    default_permissions:
+      private: 0600
+      public: 0644
+
+  pat:
+    rotation_interval_days: 90
+    min_length: 32
+    require_special_chars: true
+
+  repository:
+    allowed_protocols:
+      - https
+    required_validations:
+      - ssl_verify
+      - hostname_check
+      - fingerprint_match
+
