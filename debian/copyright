@@ -1,0 +1,8 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: repo-tool
+Source: https://github.com/example/repo-tool
+
+Files: *
+Copyright: 2025, Blaine Winslow <blaine.winslow@gmail.com>
+License: MIT
+ The full license text can be found in the LICENSE file.

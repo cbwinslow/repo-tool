@@ -1,10 +1,8 @@
 app-id: com.repotool.RepoTool
 runtime: org.freedesktop.Platform
-runtime-version: '21.08'
+runtime-version: '23.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.node16
-  - org.freedesktop.Sdk.Extension.python3
 command: repo-tool
 finish-args:
   - --share=network
@@ -14,8 +12,6 @@ modules:
     buildsystem: simple
     build-commands:
       - pip3 install --prefix=/app .
-      - npm install
-      - npm run build
       - install -Dm755 repo-tool /app/bin/repo-tool
     sources:
       - type: dir
