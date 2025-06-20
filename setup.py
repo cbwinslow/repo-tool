@@ -22,7 +22,9 @@ setup(
         "atlassian-python-api>=3.41.2",  # For Bitbucket
         "cryptography>=42.0.0",
         "tqdm>=4.66.1",
-        "gh-cli>=1.0.0",  # GitHub CLI integration
+        # GitHub CLI integration is optional; users can install the official
+        # `gh` client separately. Removing the non-existent `gh-cli` Python
+        # package to avoid installation failures.
     ],
     extras_require={
         "dev": [

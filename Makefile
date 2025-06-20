@@ -35,18 +35,19 @@ $(VENV):
 # Build both Python and TypeScript components
 build: $(VENV)
 	$(PIP) install -e .
-	$(NPM) install
-	$(NPM) run build
+	if [ -f package.json ]; then \
+	$(NPM) install && $(NPM) run build; \
+	fi
 
 # Run all tests
 test: $(VENV)
 	$(PYTHON) -m pytest tests/
-	$(NPM) test
+	if [ -f package.json ]; then $(NPM) test; fi
 
 # Install the package
 install: build
 	$(PIP) install -e .
-	$(NPM) install
+	if [ -f package.json ]; then $(NPM) install; fi
 
 # Clean build artifacts and temporary files
 clean:
@@ -63,7 +64,7 @@ clean:
 lint: $(VENV)
 	$(PYTHON) -m flake8 src/ tests/
 	$(PYTHON) -m mypy src/ tests/
-	$(NPM) run lint
+	if [ -f package.json ]; then $(NPM) run lint; fi
 
 # Generate documentation
 docs: $(VENV)
@@ -89,6 +90,7 @@ deb: $(VENV)
 	sed -i 's/{{MAINTAINER}}/$(MAINTAINER)/g' $(DEB_DIR)/DEBIAN/control
 
 	# Build package
+	mkdir -p $(DIST_DIR)
 	dpkg-deb --build $(DEB_DIR) $(DIST_DIR)/$(NAME)_$(VERSION)_$(ARCH).deb
 
 # Snap package
@@ -136,15 +138,15 @@ dev-setup: $(VENV)
 	git config core.hooksPath .github/hooks
 	# Install development tools
 	$(PIP) install -e ".[dev]"
-	$(NPM) install
+	if [ -f package.json ]; then $(NPM) install; fi
 
 # Run development environment
 dev: $(VENV)
 	$(PYTHON) -m repo_tool
 
 # Update dependencies
-update-deps: $(VENV)
+	update-deps: $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install --upgrade -e ".[dev]"
-	$(NPM) update
+	if [ -f package.json ]; then $(NPM) update; fi
 
