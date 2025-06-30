@@ -19,6 +19,7 @@ from textual.widgets import (
 from textual.binding import Binding
 from pathlib import Path
 from ..core.config import Config
+from ..core.auth import TokenManager
 
 class SettingsScreen(Screen):
     """Settings configuration screen"""
@@ -31,6 +32,7 @@ class SettingsScreen(Screen):
     def __init__(self):
         super().__init__()
         self.config = Config()
+        self.token_manager = TokenManager()
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the settings screen"""
@@ -42,6 +44,7 @@ class SettingsScreen(Screen):
                 Tab("Display", id="display"),
                 Tab("Downloads", id="downloads"),
                 Tab("Services", id="services"),
+                Tab("Credentials", id="credentials"),
                 Tab("Updates", id="updates"),
             ),
             ScrollableContainer(
@@ -140,6 +143,21 @@ class SettingsScreen(Screen):
                     id="services-settings",
                     classes="hidden"
                 ),
+                # Credentials Settings
+                Container(
+                    Vertical(
+                        Label("GitHub Token:"),
+                        Input(placeholder="GitHub PAT", id="github-token", password=True),
+                        Label("GitLab Token:"),
+                        Input(placeholder="GitLab PAT", id="gitlab-token", password=True),
+                        Label("Bitbucket Username:"),
+                        Input(placeholder="Username", id="bitbucket-user"),
+                        Label("Bitbucket App Password:"),
+                        Input(placeholder="App password", id="bitbucket-token", password=True),
+                    ),
+                    id="credentials-settings",
+                    classes="hidden"
+                ),
                 # Update Settings
                 Container(
                     Vertical(
@@ -222,6 +240,12 @@ class SettingsScreen(Screen):
         last_check = updates.get("last_check", "Never")
         self.query_one("#last-check").update(f"Last Check: {last_check}")
 
+        # Load stored credentials
+        self.query_one("#github-token").value = self.token_manager.get_token("github") or ""
+        self.query_one("#gitlab-token").value = self.token_manager.get_token("gitlab") or ""
+        self.query_one("#bitbucket-user").value = self.token_manager.get_token("bitbucket_user") or ""
+        self.query_one("#bitbucket-token").value = self.token_manager.get_token("bitbucket_token") or ""
+
     def save_settings(self) -> None:
         """Save current settings"""
         # Save paths
@@ -276,6 +300,28 @@ class SettingsScreen(Screen):
             "check_interval_days": int(self.query_one("#update-interval").value or 7),
             "last_check": self.config.get("updates", {}).get("last_check")
         }
+
+        # Save credentials
+        gt = self.query_one("#github-token").value
+        if gt:
+            self.token_manager.store_token("github", gt)
+        else:
+            self.token_manager.remove_token("github")
+        glt = self.query_one("#gitlab-token").value
+        if glt:
+            self.token_manager.store_token("gitlab", glt)
+        else:
+            self.token_manager.remove_token("gitlab")
+        bu = self.query_one("#bitbucket-user").value
+        if bu:
+            self.token_manager.store_token("bitbucket_user", bu)
+        else:
+            self.token_manager.remove_token("bitbucket_user")
+        btok = self.query_one("#bitbucket-token").value
+        if btok:
+            self.token_manager.store_token("bitbucket_token", btok)
+        else:
+            self.token_manager.remove_token("bitbucket_token")
 
         # Save all changes
         self.config._save_config()

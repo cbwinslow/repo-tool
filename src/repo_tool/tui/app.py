@@ -3,7 +3,7 @@ RepoTool TUI Application
 """
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
-from textual.widgets import Header, Footer, ListView, Input, ProgressBar, Label
+from textual.widgets import Header, Footer, ListView, Input, ProgressBar, Label, LoadingIndicator
 from textual.screen import Screen
 from textual.reactive import reactive
 from textual.binding import Binding
@@ -12,6 +12,8 @@ from rich.text import Text
 from ..core.auth import TokenManager
 from ..core.repo import RepoManager
 from ..core.config import Config
+from pathlib import Path
+import threading
 from ..core.logger import setup_logger
 from .repo_screen import RepoManagementScreen
 
@@ -75,6 +77,7 @@ class RepoToolApp(App):
         """Load repositories from all configured services"""
         try:
             repos = self.repo_manager.get_all_repositories()
+            self.repo_map = {repo.name: repo for repo in repos}
             self.query_one("#repo-list").clear()
             for repo in repos:
                 self.query_one("#repo-list").append(repo.name)
@@ -100,8 +103,9 @@ class RepoToolApp(App):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle repository selection"""
-        self.current_repo = event.item
-        self.push_screen(DownloadScreen(self.current_repo))
+        self.current_repo = self.repo_map.get(event.item)
+        if self.current_repo:
+            self.push_screen(DownloadScreen(self.current_repo))
 
 class AuthScreen(Screen):
     """Authentication Screen"""
@@ -141,16 +145,42 @@ class SettingsScreen(Screen):
 
 class DownloadScreen(Screen):
     """Download Screen"""
-    
-    def __init__(self, repo_name: str):
+
+    def __init__(self, repo):
         super().__init__()
-        self.repo_name = repo_name
+        self.repo = repo
 
     def compose(self) -> ComposeResult:
         yield Container(
-            Label(f"Download {self.repo_name}"),
+            Label(f"Downloading {self.repo.name}", id="repo-label"),
             Input(placeholder="Download location", id="location"),
+            LoadingIndicator(id="spinner"),
             ProgressBar(id="download-progress"),
             Label("", id="download-status"),
         )
+
+    def on_mount(self) -> None:
+        self.query_one("#spinner").display = True
+        dest = self.query_one("#location").value or str(self.app.config.get_download_path())
+        thread = threading.Thread(target=self._download, args=(Path(dest),), daemon=True)
+        thread.start()
+
+    def _download(self, dest: Path):
+        self.app.repo_manager.download_repository(
+            self.repo,
+            dest,
+            progress_callback=self.update_progress,
+        )
+        self.app.call_from_thread(self._finish)
+
+    def _finish(self):
+        self.query_one("#spinner").display = False
+        self.query_one("#download-status").update("Download complete")
+
+    def update_progress(self, percent: float, message: str):
+        def _update():
+            bar = self.query_one("#download-progress")
+            bar.update(progress=percent)
+            self.query_one("#download-status").update(f"{percent:.1f}% {message}")
+        self.app.call_from_thread(_update)
 

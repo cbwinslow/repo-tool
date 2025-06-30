@@ -13,14 +13,14 @@ setup(
         "requests>=2.25.0",
         "gitpython>=3.1.0",
         "click>=8.0.0",
-        "pyyaml>=5.4.0",
+        "pyyaml>=5.1",
         "textual>=0.52.1",
-        "keyring>=24.3.0",
+        "keyring>=22.0",
         "PyGithub>=2.1.1",
         "rich>=13.7.0",
         "python-gitlab>=4.2.0",
         "atlassian-python-api>=3.41.2",  # For Bitbucket
-        "cryptography>=42.0.0",
+        "cryptography>=3.3",
         "tqdm>=4.66.1",
         # GitHub CLI integration is optional; users can install the official
         # `gh` client separately. Removing the non-existent `gh-cli` Python
