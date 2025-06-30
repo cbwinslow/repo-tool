@@ -11,6 +11,7 @@ import gitlab
 from atlassian import Bitbucket
 from ..core.auth import TokenManager
 from ..core.logger import get_logger
+from .git_progress import ProgressReporter
 
 logger = get_logger(__name__)
 
@@ -120,10 +121,11 @@ class RepoManager:
                 raise ValueError(f"Repository directory already exists: {repo_path}")
             
             # Clone with progress
+            progress = ProgressReporter(progress_callback)
             git.Repo.clone_from(
                 repo.url,
                 str(repo_path),
-                progress=progress_callback
+                progress=progress
             )
             
         except Exception as e:

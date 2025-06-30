@@ -1,4 +1,5 @@
 .PHONY: build test install clean lint docs deb snap flatpak docker release
+.SHELLFLAGS := -eu -o pipefail -c
 
 # Python virtual environment
 VENV = .venv
@@ -72,11 +73,11 @@ docs: $(VENV)
 
 # Package building targets
 deb: $(VENV)
-	# Create DEB package structure
-	mkdir -p $(DEB_DIR)/DEBIAN
-	mkdir -p $(DEB_DIR)/usr/bin
-	mkdir -p $(DEB_DIR)/usr/lib/$(NAME)
-	mkdir -p $(DEB_DIR)/usr/share/doc/$(NAME)
+        # Create DEB package structure
+        mkdir -p $(DEB_DIR)/DEBIAN
+        mkdir -p $(DEB_DIR)/usr/bin
+        mkdir -p $(DEB_DIR)/usr/lib/$(NAME)
+        mkdir -p $(DEB_DIR)/usr/share/doc/$(NAME)
 
 	# Copy files
 	cp -r src/* $(DEB_DIR)/usr/lib/$(NAME)/
@@ -89,24 +90,27 @@ deb: $(VENV)
 	sed -i 's/{{ARCH}}/$(ARCH)/g' $(DEB_DIR)/DEBIAN/control
 	sed -i 's/{{MAINTAINER}}/$(MAINTAINER)/g' $(DEB_DIR)/DEBIAN/control
 
-	# Build package
-	mkdir -p $(DIST_DIR)
-	dpkg-deb --build $(DEB_DIR) $(DIST_DIR)/$(NAME)_$(VERSION)_$(ARCH).deb
+        # Build package
+        mkdir -p $(DIST_DIR)
+        dpkg-deb --build $(DEB_DIR) $(DIST_DIR)/$(NAME)_$(VERSION)_$(ARCH).deb
 
 # Snap package
 snap:
-	snapcraft clean
-	snapcraft
-	mv *.snap $(DIST_DIR)/
+        mkdir -p $(DIST_DIR)
+        snapcraft clean
+        snapcraft
+        mv *.snap $(DIST_DIR)/
 
 # Flatpak package
 flatpak:
-	flatpak-builder --force-clean $(FLATPAK_DIR) com.repotool.RepoTool.yaml
-	flatpak build-bundle $(FLATPAK_DIR) $(DIST_DIR)/$(NAME).flatpak com.repotool.RepoTool
+        mkdir -p $(DIST_DIR)
+        flatpak-builder --force-clean $(FLATPAK_DIR) com.repotool.RepoTool.yaml
+        flatpak build-bundle $(FLATPAK_DIR) $(DIST_DIR)/$(NAME).flatpak com.repotool.RepoTool
 
 # Docker image
 docker:
-	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG) .
+        mkdir -p $(DIST_DIR)
+        docker build -t $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG) .
 
 # Release
 release: clean build test deb snap flatpak docker
