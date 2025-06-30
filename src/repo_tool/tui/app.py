@@ -74,7 +74,11 @@ class RepoToolApp(App):
             self.push_screen(AuthScreen())
 
     def load_repositories(self) -> None:
-        """Load repositories from all configured services"""
+        """
+        Fetches repositories from all configured services and populates the repository list in the UI.
+        
+        If repositories are successfully loaded, updates the internal mapping of repository names to objects and refreshes the displayed list. On failure, logs the error and displays a notification.
+        """
         try:
             repos = self.repo_manager.get_all_repositories()
             self.repo_map = {repo.name: repo for repo in repos}
@@ -102,7 +106,11 @@ class RepoToolApp(App):
         self.push_screen(RepoManagementScreen())
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle repository selection"""
+        """
+        Handles the event when a repository is selected from the list view.
+        
+        If the selected repository exists in the repository map, opens the download screen for that repository.
+        """
         self.current_repo = self.repo_map.get(event.item)
         if self.current_repo:
             self.push_screen(DownloadScreen(self.current_repo))
@@ -147,10 +155,19 @@ class DownloadScreen(Screen):
     """Download Screen"""
 
     def __init__(self, repo):
+        """
+        Initialize the DownloadScreen with the specified repository object.
+        
+        Parameters:
+        	repo: The repository object to be downloaded.
+        """
         super().__init__()
         self.repo = repo
 
     def compose(self) -> ComposeResult:
+        """
+        Builds and yields the UI components for the download screen, including repository label, location input, loading spinner, progress bar, and status label.
+        """
         yield Container(
             Label(f"Downloading {self.repo.name}", id="repo-label"),
             Input(placeholder="Download location", id="location"),
@@ -160,12 +177,23 @@ class DownloadScreen(Screen):
         )
 
     def on_mount(self) -> None:
+        """
+        Starts the repository download process in a background thread when the download screen is mounted.
+        
+        Displays the loading spinner, determines the download destination, and initiates the download without blocking the UI.
+        """
         self.query_one("#spinner").display = True
         dest = self.query_one("#location").value or str(self.app.config.get_download_path())
         thread = threading.Thread(target=self._download, args=(Path(dest),), daemon=True)
         thread.start()
 
     def _download(self, dest: Path):
+        """
+        Download the selected repository to the specified destination in a background thread, updating progress via a callback.
+        
+        Parameters:
+            dest (Path): The file system path where the repository will be downloaded.
+        """
         self.app.repo_manager.download_repository(
             self.repo,
             dest,
@@ -174,10 +202,18 @@ class DownloadScreen(Screen):
         self.app.call_from_thread(self._finish)
 
     def _finish(self):
+        """
+        Hide the loading spinner and update the status label to indicate that the download has completed.
+        """
         self.query_one("#spinner").display = False
         self.query_one("#download-status").update("Download complete")
 
     def update_progress(self, percent: float, message: str):
+        """
+        Update the download progress bar and status label with the current percentage and message.
+        
+        Ensures that UI updates are performed safely from a background thread.
+        """
         def _update():
             bar = self.query_one("#download-progress")
             bar.update(progress=percent)

@@ -30,12 +30,22 @@ class SettingsScreen(Screen):
     ]
 
     def __init__(self):
+        """
+        Initialize the SettingsScreen with configuration and token management.
+        
+        Creates instances of Config and TokenManager to handle application settings and credential storage.
+        """
         super().__init__()
         self.config = Config()
         self.token_manager = TokenManager()
 
     def compose(self) -> ComposeResult:
-        """Create child widgets for the settings screen"""
+        """
+        Constructs and yields the complete widget layout for the settings screen, including all settings categories and controls.
+        
+        Returns:
+            ComposeResult: An iterable of widgets composing the settings screen UI, with tabs and containers for General, User, Display, Downloads, Services, Credentials, and Updates settings.
+        """
         yield Container(
             Label("Settings", id="title"),
             Tabs(
@@ -197,7 +207,11 @@ class SettingsScreen(Screen):
         container.remove_class("hidden")
 
     def load_settings(self) -> None:
-        """Load current settings into the UI"""
+        """
+        Populate the settings screen UI fields with current configuration values and stored credentials.
+        
+        Loads configuration data for paths, user information, display, download, service, and update settings from the configuration object, and fills the corresponding UI widgets. Also retrieves and sets stored authentication tokens and credentials for GitHub, GitLab, and Bitbucket using the token manager.
+        """
         # Load paths
         paths = self.config.get("paths", {})
         self.query_one("#default-download-path").value = paths.get("default_download", "")
@@ -247,7 +261,11 @@ class SettingsScreen(Screen):
         self.query_one("#bitbucket-token").value = self.token_manager.get_token("bitbucket_token") or ""
 
     def save_settings(self) -> None:
-        """Save current settings"""
+        """
+        Saves the current configuration and credentials from the settings screen to persistent storage.
+        
+        Updates all configuration categories—including paths, user information, display, download, service, and update settings—based on the current UI values. Stores or removes authentication tokens and credentials for GitHub, GitLab, and Bitbucket using the token manager, depending on whether the corresponding input fields are populated. Persists all changes and notifies the user upon successful save.
+        """
         # Save paths
         self.config.config["paths"] = {
             "default_download": self.query_one("#default-download-path").value,

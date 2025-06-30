@@ -108,7 +108,18 @@ class RepoManager:
         destination: Path,
         progress_callback=None
     ) -> None:
-        """Download a repository to the specified location"""
+        """
+        Clones the specified repository into the given destination directory.
+        
+        Raises:
+            ValueError: If the target repository directory already exists.
+            Exception: If cloning fails for any other reason.
+        
+        Parameters:
+            repo (Repository): The repository to clone.
+            destination (Path): The directory where the repository will be cloned.
+            progress_callback (callable, optional): A callback function to report cloning progress.
+        """
         try:
             # Ensure destination exists
             destination.mkdir(parents=True, exist_ok=True)
