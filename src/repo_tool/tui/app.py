@@ -74,7 +74,11 @@ class RepoToolApp(App):
             self.push_screen(AuthScreen())
 
     def load_repositories(self) -> None:
-        """Load repositories from all configured services"""
+        """
+        Retrieves repositories from all configured services and populates the repository list view.
+        
+        On success, updates the internal repository map and refreshes the UI list. On failure, logs the error and displays a notification.
+        """
         try:
             repos = self.repo_manager.get_all_repositories()
             self.repo_map = {repo.name: repo for repo in repos}
@@ -102,7 +106,11 @@ class RepoToolApp(App):
         self.push_screen(RepoManagementScreen())
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle repository selection"""
+        """
+        Handles the event when a repository is selected from the list view.
+        
+        If a valid repository is selected, sets it as the current repository and opens the download screen for that repository.
+        """
         self.current_repo = self.repo_map.get(event.item)
         if self.current_repo:
             self.push_screen(DownloadScreen(self.current_repo))
@@ -147,10 +155,19 @@ class DownloadScreen(Screen):
     """Download Screen"""
 
     def __init__(self, repo):
+        """
+        Initialize the DownloadScreen with the specified repository object.
+        
+        Parameters:
+        	repo: The repository object to be downloaded.
+        """
         super().__init__()
         self.repo = repo
 
     def compose(self) -> ComposeResult:
+        """
+        Builds and yields the UI layout for the download screen, including repository name, download location input, loading spinner, progress bar, and status label.
+        """
         yield Container(
             Label(f"Downloading {self.repo.name}", id="repo-label"),
             Input(placeholder="Download location", id="location"),
@@ -160,12 +177,25 @@ class DownloadScreen(Screen):
         )
 
     def on_mount(self) -> None:
+        """
+        Starts the repository download process in a background thread when the screen is mounted.
+        
+        Displays the loading spinner and determines the download destination path from user input or configuration before launching the download thread.
+        """
         self.query_one("#spinner").display = True
         dest = self.query_one("#location").value or str(self.app.config.get_download_path())
         thread = threading.Thread(target=self._download, args=(Path(dest),), daemon=True)
         thread.start()
 
     def _download(self, dest: Path):
+        """
+        Downloads the selected repository to the specified destination in a background thread.
+        
+        Triggers progress updates via a callback and schedules UI completion handling on the main thread after the download finishes.
+        
+        Parameters:
+            dest (Path): The file system path where the repository will be downloaded.
+        """
         self.app.repo_manager.download_repository(
             self.repo,
             dest,
@@ -174,10 +204,22 @@ class DownloadScreen(Screen):
         self.app.call_from_thread(self._finish)
 
     def _finish(self):
+        """
+        Finalize the download process by hiding the loading spinner and updating the status label to indicate completion.
+        """
         self.query_one("#spinner").display = False
         self.query_one("#download-status").update("Download complete")
 
     def update_progress(self, percent: float, message: str):
+        """
+        Update the download progress bar and status label with the current percentage and message.
+        
+        Ensures that UI updates are performed safely on the main thread when called from a background thread.
+        
+        Parameters:
+            percent (float): The current progress percentage of the download.
+            message (str): A status message describing the current download state.
+        """
         def _update():
             bar = self.query_one("#download-progress")
             bar.update(progress=percent)
