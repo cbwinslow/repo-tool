@@ -305,15 +305,23 @@ class SettingsScreen(Screen):
         gt = self.query_one("#github-token").value
         if gt:
             self.token_manager.store_token("github", gt)
+        else:
+            self.token_manager.remove_token("github")
         glt = self.query_one("#gitlab-token").value
         if glt:
             self.token_manager.store_token("gitlab", glt)
+        else:
+            self.token_manager.remove_token("gitlab")
         bu = self.query_one("#bitbucket-user").value
         if bu:
             self.token_manager.store_token("bitbucket_user", bu)
+        else:
+            self.token_manager.remove_token("bitbucket_user")
         btok = self.query_one("#bitbucket-token").value
         if btok:
             self.token_manager.store_token("bitbucket_token", btok)
+        else:
+            self.token_manager.remove_token("bitbucket_token")
 
         # Save all changes
         self.config._save_config()
