@@ -104,7 +104,11 @@ class Config:
         return DEFAULT_CONFIG.copy()
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Get configuration value"""
+        """
+        Retrieve a configuration value by key, with special handling for the "theme" key.
+        
+        If the key is "theme", the method looks for it within the "display" section of the configuration. Returns the provided default value if the key is not found.
+        """
         if key in self.config:
             return self.config.get(key, default)
         if key == "theme":
@@ -112,7 +116,11 @@ class Config:
         return default
 
     def set(self, key: str, value: Any) -> None:
-        """Set configuration value"""
+        """
+        Sets a configuration value for the specified key.
+        
+        If the key is "theme", updates the "theme" value within the "display" section of the configuration. For all other keys, sets the value at the top level of the configuration dictionary. The updated configuration is saved to disk.
+        """
         if key == "theme":
             self.config.setdefault("display", {})["theme"] = value
         else:
@@ -120,7 +128,9 @@ class Config:
         self._save_config()
 
     def _save_config(self) -> None:
-        """Save configuration to file"""
+        """
+        Writes the current configuration dictionary to the YAML configuration file.
+        """
         with open(self.config_file, 'w') as f:
             yaml.dump(self.config, f)
 

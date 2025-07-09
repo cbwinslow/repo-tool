@@ -67,11 +67,18 @@ class TokenManager:
         )
 
     def clear_tokens(self) -> None:
-        """Clear all stored tokens"""
+        """
+        Deletes all stored authentication tokens for every supported service from the keyring.
+        """
         for service in self.services:
             keyring.delete_password(self.KEYRING_NAMESPACE, service)
 
     def remove_token(self, service: str) -> None:
-        """Remove a specific token"""
+        """
+        Removes the stored authentication token for the specified service from the keyring.
+        
+        Parameters:
+            service (str): The name of the service whose token should be deleted.
+        """
         keyring.delete_password(self.KEYRING_NAMESPACE, service)
 
