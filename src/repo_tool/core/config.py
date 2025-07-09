@@ -105,11 +105,18 @@ class Config:
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value"""
-        return self.config.get(key, default)
+        if key in self.config:
+            return self.config.get(key, default)
+        if key == "theme":
+            return self.config.get("display", {}).get("theme", default)
+        return default
 
     def set(self, key: str, value: Any) -> None:
         """Set configuration value"""
-        self.config[key] = value
+        if key == "theme":
+            self.config.setdefault("display", {})["theme"] = value
+        else:
+            self.config[key] = value
         self._save_config()
 
     def _save_config(self) -> None:

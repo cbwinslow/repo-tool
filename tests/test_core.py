@@ -75,3 +75,27 @@ def test_download_to_existing_directory(temp_dir):
     with pytest.raises(ValueError):
         repo_manager.download_repository(repo, temp_dir)
 
+
+def test_download_multiple_repositories(temp_dir, monkeypatch):
+    repo1 = Repository(
+        name="repo1",
+        service="github",
+        url="https://github.com/test/repo1.git",
+    )
+    repo2 = Repository(
+        name="repo2",
+        service="github",
+        url="https://github.com/test/repo2.git",
+    )
+
+    def mock_clone_from(url, path, progress=None):
+        Path(path).mkdir()
+
+    monkeypatch.setattr("git.Repo.clone_from", mock_clone_from)
+
+    repo_manager = RepoManager()
+    repo_manager.download_repositories([repo1, repo2], temp_dir)
+
+    assert (temp_dir / repo1.name).exists()
+    assert (temp_dir / repo2.name).exists()
+

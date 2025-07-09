@@ -132,6 +132,16 @@ class RepoManager:
             logger.error(f"Failed to download repository {repo.name}: {e}")
             raise
 
+    def download_repositories(
+        self,
+        repos: List[Repository],
+        destination: Path,
+        progress_callback=None,
+    ) -> None:
+        """Download multiple repositories sequentially."""
+        for repo in repos:
+            self.download_repository(repo, destination, progress_callback)
+
     def validate_destination(self, path: Path) -> bool:
         """Validate if a destination path is suitable for download"""
         try:

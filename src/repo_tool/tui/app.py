@@ -3,7 +3,16 @@ RepoTool TUI Application
 """
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
-from textual.widgets import Header, Footer, ListView, Input, ProgressBar, Label, LoadingIndicator
+from textual.widgets import (
+    Header,
+    Footer,
+    ListView,
+    ListItem,
+    Input,
+    ProgressBar,
+    Label,
+    LoadingIndicator,
+)
 from textual.screen import Screen
 from textual.reactive import reactive
 from textual.binding import Binding
@@ -37,6 +46,8 @@ class RepoToolApp(App):
         Binding("s", "settings", "Settings", show=True),
         Binding("c", "cancel", "Cancel Download", show=False),
         Binding("m", "manage", "Manage Repositories", show=True),
+        Binding("space", "toggle_select", "Select Repo", show=True),
+        Binding("d", "download", "Download", show=True),
     ]
 
     current_repo = reactive("")
@@ -48,6 +59,7 @@ class RepoToolApp(App):
         self.token_manager = TokenManager()
         self.repo_manager = RepoManager()
         self.logger = setup_logger()
+        self.selected_repos = set()
 
     def compose(self) -> ComposeResult:
         """Create child widgets"""
@@ -101,11 +113,41 @@ class RepoToolApp(App):
         """Show repository management screen"""
         self.push_screen(RepoManagementScreen())
 
+    def action_toggle_select(self) -> None:
+        """Toggle selection of highlighted repository"""
+        list_view = self.query_one("#repo-list")
+        item = list_view.highlighted_child
+        if item is None:
+            return
+        name = str(item)
+        if name in self.selected_repos:
+            self.selected_repos.remove(name)
+        else:
+            self.selected_repos.add(name)
+        self.query_one("#status").update(f"Selected: {len(self.selected_repos)}")
+
+    def action_download(self) -> None:
+        """Download selected repositories"""
+        if self.selected_repos:
+            repos = [self.repo_map[name] for name in self.selected_repos]
+            self.selected_repos.clear()
+            self.push_screen(MultiDownloadScreen(repos))
+        else:
+            list_view = self.query_one("#repo-list")
+            item = list_view.highlighted_child
+            if item:
+                repo = self.repo_map.get(str(item))
+                if repo:
+                    self.push_screen(DownloadScreen(repo))
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle repository selection"""
-        self.current_repo = self.repo_map.get(event.item)
-        if self.current_repo:
-            self.push_screen(DownloadScreen(self.current_repo))
+        """Handle repository selection via Enter key"""
+        list_view = self.query_one("#repo-list")
+        item = list_view.highlighted_child
+        if item:
+            self.current_repo = self.repo_map.get(str(item))
+            if self.current_repo:
+                self.action_download()
 
 class AuthScreen(Screen):
     """Authentication Screen"""
@@ -140,7 +182,12 @@ class SettingsScreen(Screen):
             Label("Settings"),
             Input(placeholder="Default download location", id="download-path"),
             Label("Theme:"),
-            ListView(["Light", "Dark", "System"], id="theme-list"),
+            ListView(
+                ListItem(Label("Light")),
+                ListItem(Label("Dark")),
+                ListItem(Label("System")),
+                id="theme-list",
+            ),
         )
 
 class DownloadScreen(Screen):
@@ -182,5 +229,51 @@ class DownloadScreen(Screen):
             bar = self.query_one("#download-progress")
             bar.update(progress=percent)
             self.query_one("#download-status").update(f"{percent:.1f}% {message}")
+        self.app.call_from_thread(_update)
+
+
+class MultiDownloadScreen(Screen):
+    """Screen to download multiple repositories"""
+
+    def __init__(self, repos):
+        super().__init__()
+        self.repos = repos
+
+    def compose(self) -> ComposeResult:
+        yield Container(
+            Label(f"Downloading {len(self.repos)} repositories", id="multi-label"),
+            Input(placeholder="Download location", id="location"),
+            LoadingIndicator(id="spinner"),
+            ProgressBar(id="download-progress"),
+            Label("", id="download-status"),
+        )
+
+    def on_mount(self) -> None:
+        self.query_one("#spinner").display = True
+        dest = self.query_one("#location").value or str(self.app.config.get_download_path())
+        thread = threading.Thread(target=self._download, args=(Path(dest),), daemon=True)
+        thread.start()
+
+    def _download(self, dest: Path):
+        total = len(self.repos)
+        for index, repo in enumerate(self.repos, start=1):
+            self.app.repo_manager.download_repository(
+                repo,
+                dest,
+                progress_callback=lambda p, m, r=repo: self.update_progress(index, total, r.name, p, m),
+            )
+        self.app.call_from_thread(self._finish)
+
+    def _finish(self):
+        self.query_one("#spinner").display = False
+        self.query_one("#download-status").update("All downloads complete")
+
+    def update_progress(self, idx: int, total: int, name: str, percent: float, message: str):
+        def _update():
+            bar = self.query_one("#download-progress")
+            bar.update(progress=percent)
+            self.query_one("#download-status").update(
+                f"[{idx}/{total}] {name}: {percent:.1f}% {message}"
+            )
         self.app.call_from_thread(_update)
 

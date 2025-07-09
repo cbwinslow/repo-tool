@@ -39,7 +39,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "repo-tool=repo_tool.cli:main",
+            "repo-tool=repo_tool.__main__:main",
         ],
     },
     classifiers=[
