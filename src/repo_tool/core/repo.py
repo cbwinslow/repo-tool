@@ -108,7 +108,13 @@ class RepoManager:
         destination: Path,
         progress_callback=None
     ) -> None:
-        """Download a repository to the specified location"""
+        """
+        Clones the specified repository into a new directory within the given destination path.
+        
+        Raises:
+            ValueError: If the target repository directory already exists.
+            Exception: If cloning fails for any other reason.
+        """
         try:
             # Ensure destination exists
             destination.mkdir(parents=True, exist_ok=True)
@@ -138,12 +144,21 @@ class RepoManager:
         destination: Path,
         progress_callback=None,
     ) -> None:
-        """Download multiple repositories sequentially."""
+        """
+        Download multiple repositories to the specified destination directory.
+        
+        Each repository in the provided list is downloaded sequentially. An optional progress callback can be supplied to report cloning progress.
+        """
         for repo in repos:
             self.download_repository(repo, destination, progress_callback)
 
     def validate_destination(self, path: Path) -> bool:
-        """Validate if a destination path is suitable for download"""
+        """
+        Checks whether the specified path is valid and writable for downloading repositories.
+        
+        Returns:
+            bool: True if the path exists or can be created and is writable; False otherwise.
+        """
         try:
             # Check if path exists or can be created
             if not path.exists():

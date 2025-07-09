@@ -61,7 +61,11 @@ def test_repository_download(temp_dir, monkeypatch):
     assert (temp_dir / repo.name).exists()
 
 def test_download_to_existing_directory(temp_dir):
-    """Test downloading to an existing directory"""
+    """
+    Test that downloading a repository to a directory that already exists with the same name raises a ValueError.
+    
+    This ensures that the download operation does not overwrite existing directories and properly handles naming conflicts.
+    """
     repo = Repository(
         name="test-repo",
         service="github",
@@ -89,6 +93,14 @@ def test_download_multiple_repositories(temp_dir, monkeypatch):
     )
 
     def mock_clone_from(url, path, progress=None):
+        """
+        Simulates cloning a Git repository by creating a directory at the specified path.
+        
+        Parameters:
+            url (str): The URL of the repository to clone.
+            path (str or Path): The target directory path where the repository would be cloned.
+            progress: Ignored; included for signature compatibility.
+        """
         Path(path).mkdir()
 
     monkeypatch.setattr("git.Repo.clone_from", mock_clone_from)

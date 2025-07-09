@@ -3,6 +3,11 @@ from repo_tool.tui.app import RepoToolApp
 
 
 def test_settings_screen_opens():
+    """
+    Test that triggering the settings action in RepoToolApp opens the SettingsScreen.
+    
+    This test mocks keyring password storage with an in-memory dictionary, ensures the app always has valid tokens, runs the app in test mode, triggers the settings action, and asserts that the settings screen is displayed.
+    """
     async def run_app():
         import keyring
         storage = {}

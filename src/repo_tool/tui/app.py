@@ -54,6 +54,9 @@ class RepoToolApp(App):
     download_progress = reactive(0.0)
     
     def __init__(self):
+        """
+        Initialize the main application with configuration, authentication, repository management, logging, and selection tracking.
+        """
         super().__init__()
         self.config = Config()
         self.token_manager = TokenManager()
@@ -62,7 +65,9 @@ class RepoToolApp(App):
         self.selected_repos = set()
 
     def compose(self) -> ComposeResult:
-        """Create child widgets"""
+        """
+        Constructs and yields the main UI layout for the application, including the header, logo, search input, repository list, progress bar, status label, and footer.
+        """
         yield Header(show_clock=True)
         yield Container(
             Label(LOGO, id="logo"),
@@ -110,11 +115,17 @@ class RepoToolApp(App):
         self.push_screen(SettingsScreen())
         
     def action_manage(self) -> None:
-        """Show repository management screen"""
+        """
+        Displays the repository management screen for managing available repositories.
+        """
         self.push_screen(RepoManagementScreen())
 
     def action_toggle_select(self) -> None:
-        """Toggle selection of highlighted repository"""
+        """
+        Toggles the selection state of the currently highlighted repository in the list.
+        
+        If the highlighted repository is already selected, it is deselected; otherwise, it is added to the selection. Updates the status label to reflect the current number of selected repositories.
+        """
         list_view = self.query_one("#repo-list")
         item = list_view.highlighted_child
         if item is None:
@@ -127,7 +138,11 @@ class RepoToolApp(App):
         self.query_one("#status").update(f"Selected: {len(self.selected_repos)}")
 
     def action_download(self) -> None:
-        """Download selected repositories"""
+        """
+        Initiate download of selected repositories or the currently highlighted repository.
+        
+        If multiple repositories are selected, starts a batch download and clears the selection. If none are selected, downloads the currently highlighted repository in the list.
+        """
         if self.selected_repos:
             repos = [self.repo_map[name] for name in self.selected_repos]
             self.selected_repos.clear()
@@ -141,7 +156,9 @@ class RepoToolApp(App):
                     self.push_screen(DownloadScreen(repo))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle repository selection via Enter key"""
+        """
+        Handles the event when a repository is selected from the list, triggering the download action for the highlighted repository.
+        """
         list_view = self.query_one("#repo-list")
         item = list_view.highlighted_child
         if item:
@@ -178,6 +195,9 @@ class SettingsScreen(Screen):
     """Settings Screen"""
     
     def compose(self) -> ComposeResult:
+        """
+        Constructs and yields the settings screen layout, including inputs for download location and theme selection.
+        """
         yield Container(
             Label("Settings"),
             Input(placeholder="Default download location", id="download-path"),
@@ -225,6 +245,11 @@ class DownloadScreen(Screen):
         self.query_one("#download-status").update("Download complete")
 
     def update_progress(self, percent: float, message: str):
+        """
+        Update the download progress bar and status label with the current percentage and message.
+        
+        Ensures that UI updates are performed on the main thread.
+        """
         def _update():
             bar = self.query_one("#download-progress")
             bar.update(progress=percent)
@@ -236,10 +261,19 @@ class MultiDownloadScreen(Screen):
     """Screen to download multiple repositories"""
 
     def __init__(self, repos):
+        """
+        Initialize the MultiDownloadScreen with a list of repositories to download.
+        
+        Parameters:
+            repos (list): The repositories to be downloaded sequentially.
+        """
         super().__init__()
         self.repos = repos
 
     def compose(self) -> ComposeResult:
+        """
+        Builds and yields the UI layout for the multi-repository download screen, including a label with the repository count, download location input, loading indicator, progress bar, and status label.
+        """
         yield Container(
             Label(f"Downloading {len(self.repos)} repositories", id="multi-label"),
             Input(placeholder="Download location", id="location"),
@@ -249,12 +283,21 @@ class MultiDownloadScreen(Screen):
         )
 
     def on_mount(self) -> None:
+        """
+        Starts the spinner, determines the download destination, and launches a background thread to download all selected repositories.
+        """
         self.query_one("#spinner").display = True
         dest = self.query_one("#location").value or str(self.app.config.get_download_path())
         thread = threading.Thread(target=self._download, args=(Path(dest),), daemon=True)
         thread.start()
 
     def _download(self, dest: Path):
+        """
+        Downloads all repositories in the list sequentially to the specified destination, updating progress for each.
+        
+        Parameters:
+            dest (Path): The directory where repositories will be downloaded.
+        """
         total = len(self.repos)
         for index, repo in enumerate(self.repos, start=1):
             self.app.repo_manager.download_repository(
@@ -265,10 +308,23 @@ class MultiDownloadScreen(Screen):
         self.app.call_from_thread(self._finish)
 
     def _finish(self):
+        """
+        Finalize the multi-repository download process by hiding the spinner and updating the status to indicate completion.
+        """
         self.query_one("#spinner").display = False
         self.query_one("#download-status").update("All downloads complete")
 
     def update_progress(self, idx: int, total: int, name: str, percent: float, message: str):
+        """
+        Update the progress bar and status label to reflect the current state of a multi-repository download.
+        
+        Parameters:
+            idx (int): The index of the current repository being downloaded (1-based).
+            total (int): The total number of repositories to download.
+            name (str): The name of the current repository.
+            percent (float): The completion percentage for the current repository.
+            message (str): Additional status message to display.
+        """
         def _update():
             bar = self.query_one("#download-progress")
             bar.update(progress=percent)
