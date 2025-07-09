@@ -26,6 +26,7 @@ A powerful Terminal User Interface (TUI) application for managing and downloadin
 - Progress bars for all operations
 - Message center for status updates and errors
 - Multiple repository selection
+- Batch download of multiple repositories
 - Dark and light themes
 - Configurable UI elements
 
@@ -98,6 +99,8 @@ repo-tool
    - Press 'q' to quit
    - Press 'r' to refresh repository list
    - Press 's' for settings
+   - Use 'space' to select repositories
+   - Press 'd' to download selected repositories
 
 ## Configuration
 

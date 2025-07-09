@@ -71,3 +71,7 @@ class TokenManager:
         for service in self.services:
             keyring.delete_password(self.KEYRING_NAMESPACE, service)
 
+    def remove_token(self, service: str) -> None:
+        """Remove a specific token"""
+        keyring.delete_password(self.KEYRING_NAMESPACE, service)
+
