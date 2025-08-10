@@ -25,6 +25,8 @@ from pathlib import Path
 import threading
 from ..core.logger import setup_logger
 from .repo_screen import RepoManagementScreen
+from .about_screen import AboutScreen
+from .message_screen import MessageCenterScreen
 
 # ASCII art logo
 LOGO = """
@@ -48,6 +50,8 @@ class RepoToolApp(App):
         Binding("m", "manage", "Manage Repositories", show=True),
         Binding("space", "toggle_select", "Select Repo", show=True),
         Binding("d", "download", "Download", show=True),
+        Binding("a", "about", "About", show=True),
+        Binding("g", "messages", "Messages", show=True),
     ]
 
     current_repo = reactive("")
@@ -112,6 +116,14 @@ class RepoToolApp(App):
     def action_manage(self) -> None:
         """Show repository management screen"""
         self.push_screen(RepoManagementScreen())
+
+    def action_about(self) -> None:
+        """Show about screen"""
+        self.push_screen(AboutScreen())
+
+    def action_messages(self) -> None:
+        """Show message center screen"""
+        self.push_screen(MessageCenterScreen())
 
     def action_toggle_select(self) -> None:
         """Toggle selection of highlighted repository"""

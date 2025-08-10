@@ -8,7 +8,6 @@ from textual.widgets import (
     Button,
     DataTable,
     Label,
-    FilteredDataTable,
     Tabs,
     Tab,
     Footer
@@ -45,7 +44,7 @@ class MessageCenterScreen(Screen):
                 id="message-tabs"
             ),
             ScrollableContainer(
-                FilteredDataTable(
+                DataTable(
                     show_header=True,
                     zebra_stripes=True,
                     id="message-table"
@@ -57,7 +56,7 @@ class MessageCenterScreen(Screen):
         
     def on_mount(self) -> None:
         """Handle screen mount"""
-        table = self.query_one("#message-table", FilteredDataTable)
+        table = self.query_one("#message-table", DataTable)
         table.add_columns(
             "Time",
             "Type",
@@ -69,7 +68,7 @@ class MessageCenterScreen(Screen):
         
     def load_messages(self, message_type: MessageType = None) -> None:
         """Load messages into the table"""
-        table = self.query_one("#message-table", FilteredDataTable)
+        table = self.query_one("#message-table", DataTable)
         table.clear()
         
         # Get messages from the last 7 days by default
@@ -128,7 +127,7 @@ class MessageCenterScreen(Screen):
         
     def action_filter(self) -> None:
         """Toggle filter input"""
-        table = self.query_one("#message-table", FilteredDataTable)
+        table = self.query_one("#message-table", DataTable)
         table.focus()
         
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
