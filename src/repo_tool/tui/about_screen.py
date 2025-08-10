@@ -181,7 +181,8 @@ class AboutScreen(Screen):
             license_path = Path(__file__).parent.parent.parent / "LICENSE"
             with open(license_path) as f:
                 license_text = f.read()
-                
+
             from .text_screen import TextScreen
             self.app.push_screen(TextScreen("License", license_text))
-
+        except Exception as e:
+            self.notify(f"Failed to open license: {e}", severity="error")

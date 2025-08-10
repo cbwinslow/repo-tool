@@ -99,6 +99,8 @@ repo-tool
    - Press 'q' to quit
    - Press 'r' to refresh repository list
    - Press 's' for settings
+   - Press 'a' for about
+   - Press 'g' for messages
    - Use 'space' to select repositories
    - Press 'd' to download selected repositories
 
